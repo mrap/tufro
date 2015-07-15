@@ -98,7 +98,7 @@ func RespondToRequest(req *Request) {
 	tripTime := time.Duration(req.Routes[0].TotalTime()) * time.Second
 	tripTimeRT := time.Duration(req.Routes[0].TotalTimeRT()) * time.Second
 	status := fmt.Sprintf(
-		"@%s %s -> %s right now: %.2f mins. (Usually %.2f mins)",
+		"@%s %s -> %s right now: %.0f mins. (Usually %.0f mins)",
 		req.Tweet.User.ScreenName,
 		req.From.Description,
 		req.To.Description,
