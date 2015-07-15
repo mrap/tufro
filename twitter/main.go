@@ -95,13 +95,15 @@ func ProcessNewRequest(req *Request) {
 }
 
 func RespondToRequest(req *Request) {
-	d := time.Duration(req.Routes[0].TotalTime()) * time.Second
+	tripTime := time.Duration(req.Routes[0].TotalTime()) * time.Second
+	tripTimeRT := time.Duration(req.Routes[0].TotalTimeRT()) * time.Second
 	status := fmt.Sprintf(
-		"@%s Driving %s -> %s will take you about %.2f minutes",
+		"@%s %s -> %s right now: %.2f mins. (Usually %.2f mins)",
 		req.Tweet.User.ScreenName,
 		req.From.Description,
 		req.To.Description,
-		d.Minutes())
+		tripTimeRT.Minutes(),
+		tripTime.Minutes())
 
 	_, err := Api.PostTweet(status, url.Values{})
 	if err != nil {
