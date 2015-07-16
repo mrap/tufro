@@ -66,6 +66,13 @@ var _ = Describe("Request", func() {
 				})
 				AssertCorrectStrings()
 			})
+
+			Context("with trailing hashtag phrases", func() {
+				BeforeEach(func() {
+					text += " #thanks"
+				})
+				AssertCorrectStrings()
+			})
 		}
 
 		Context("formatted: a -> b", func() {
