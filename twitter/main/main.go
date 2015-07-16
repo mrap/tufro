@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/url"
-	"time"
 
 	"github.com/ChimeraCoder/anaconda"
 	. "github.com/mrap/tufro/twitter"
@@ -67,17 +65,12 @@ func ProcessNewRequest(req *Request) {
 }
 
 func RespondToRequest(req *Request) {
-	tripTime := time.Duration(req.Routes[0].TotalTime()) * time.Second
-	tripTimeRT := time.Duration(req.Routes[0].TotalTimeRT()) * time.Second
-	status := fmt.Sprintf(
-		"@%s %s -> %s right now: %.0f mins. (Usually %.0f mins)",
-		req.Tweet.User.ScreenName,
-		req.QueryFrom,
-		req.QueryTo,
-		tripTimeRT.Minutes(),
-		tripTime.Minutes())
-
-	_, err := Api.PostTweet(status, url.Values{})
+	text, err := req.ResponseText()
+	if err != nil {
+		log.Println("Couldn't generate respond text", err.Error())
+		return
+	}
+	_, err = Api.PostTweet(text, url.Values{})
 	if err != nil {
 		log.Println("Problem posting tweet", err)
 	}

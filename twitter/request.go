@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"time"
 
 	"github.com/ChimeraCoder/anaconda"
 	"github.com/mrap/waze/location"
@@ -69,4 +70,19 @@ func TweetGeoPoint(t *anaconda.Tweet) *location.GeoPoint {
 	} else {
 		return nil
 	}
+}
+
+func (req *Request) ResponseText() (string, error) {
+	if len(req.Routes) == 0 {
+		return "", fmt.Errorf("Can't form response text without any routes!")
+	}
+	tripTime := time.Duration(req.Routes[0].TotalTime()) * time.Second
+	tripTimeRT := time.Duration(req.Routes[0].TotalTimeRT()) * time.Second
+	return fmt.Sprintf(
+		"@%s %s -> %s right now: %.0f mins. (Usually %.0f mins)",
+		req.Tweet.User.ScreenName,
+		req.QueryFrom,
+		req.QueryTo,
+		tripTimeRT.Minutes(),
+		tripTime.Minutes()), nil
 }
