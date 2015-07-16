@@ -19,15 +19,6 @@ type Request struct {
 	Routes    []route.Route
 }
 
-func NewRequest(tweet *anaconda.Tweet) *Request {
-	from, to := ExtractLocationStrings(tweet)
-	return &Request{
-		Tweet:     tweet,
-		QueryFrom: from,
-		QueryTo:   to,
-	}
-}
-
 var reLocStrings = regexp.MustCompile(`(?i)\A@\w+\s+\b(.+)\b(?:\s*->\s*|\s+to\s+)([[:^punct:]]+)\b`)
 
 func ExtractLocationStrings(tweet *anaconda.Tweet) (string, string) {
