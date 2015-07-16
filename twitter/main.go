@@ -31,7 +31,7 @@ var (
 )
 
 func init() {
-	parseLocationsExp = regexp.MustCompile(`^@\S+\s+(.+)\s*(?:->|-&gt;)\s*([^?]+).*$`)
+	parseLocationsExp = regexp.MustCompile(`^@\S+\s+(.+)\s*(?:->|-&gt;|to)\s*([^?]+).*$`)
 }
 
 func ParseLocationStrings(tweet *anaconda.Tweet) (string, string) {
