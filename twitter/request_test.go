@@ -52,6 +52,13 @@ var _ = Describe("Request", func() {
 				})
 				AssertCorrectStrings()
 			})
+
+			Context("with trailing whitespace", func() {
+				BeforeEach(func() {
+					text += " "
+				})
+				AssertCorrectStrings()
+			})
 		}
 
 		Context("formatted: a -> b", func() {
