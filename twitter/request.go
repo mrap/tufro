@@ -28,7 +28,7 @@ func NewRequest(tweet *anaconda.Tweet) *Request {
 	}
 }
 
-var reLocStrings = regexp.MustCompile(`(?i)\A@\w+\s+\b(.+)\b(?:\s*->\s*|\sto\s)([[:^punct:]]+)\b`)
+var reLocStrings = regexp.MustCompile(`(?i)\A@\w+\s+\b(.+)\b(?:\s*->\s*|\s+to\s+)([[:^punct:]]+)\b`)
 
 func ExtractLocationStrings(tweet *anaconda.Tweet) (string, string) {
 	matches := reLocStrings.FindStringSubmatch(tweet.Text)
