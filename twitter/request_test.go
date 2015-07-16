@@ -51,6 +51,13 @@ var _ = Describe("Request", func() {
 					text += "?"
 				})
 				AssertCorrectStrings()
+
+				Context("with text after question mark", func() {
+					BeforeEach(func() {
+						text += " text after question mark"
+					})
+					AssertCorrectStrings()
+				})
 			})
 
 			Context("with trailing whitespace", func() {
