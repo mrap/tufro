@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/url"
 	"regexp"
-	"sync"
 	"time"
 
 	"github.com/ChimeraCoder/anaconda"
@@ -100,8 +99,8 @@ func RespondToRequest(req *Request) {
 	status := fmt.Sprintf(
 		"@%s %s -> %s right now: %.0f mins. (Usually %.0f mins)",
 		req.Tweet.User.ScreenName,
-		req.From.Description,
-		req.To.Description,
+		req.From,
+		req.To,
 		tripTimeRT.Minutes(),
 		tripTime.Minutes())
 
@@ -114,36 +113,39 @@ func RespondToRequest(req *Request) {
 func (req *Request) Populate() error {
 	fromStr, toStr := ParseLocationStrings(req.Tweet)
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		req.From = location.SearchTopLocation(fromStr)
-	}()
-	go func() {
-		defer wg.Done()
-		req.To = location.SearchTopLocation(toStr)
-	}()
-	wg.Wait()
-
+	tweetOrigin := TweetGeoPoint(req.Tweet)
+	req.From = location.SearchTopLocation(fromStr, tweetOrigin)
 	if req.From == nil {
 		return fmt.Errorf("Unable to find [from] location: '%s'\n", fromStr)
 	}
+
+	if tweetOrigin == nil {
+		req.From.PopulateCoordinates()
+		tweetOrigin = req.From.Coordinates
+	}
+	req.To = location.SearchTopLocation(toStr, tweetOrigin)
 	if req.To == nil {
 		return fmt.Errorf("Unable to find [to] location: '%s'\n", toStr)
 	}
 
 	var err error
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		req.Routes, err = route.GetRoutes(req.From, req.To)
-	}()
-	wg.Wait()
-
+	req.Routes, err = route.GetRoutes(req.From, req.To)
 	if err != nil || len(req.Routes) == 0 {
-		return fmt.Errorf("Unable to find routes from '%s' to '%s'", fromStr, toStr)
+		return fmt.Errorf("Unable to find routes from '%s' to '%s'. Error: %s", fromStr, toStr, err)
 	}
 
 	return nil
+}
+
+func TweetGeoPoint(t *anaconda.Tweet) *location.GeoPoint {
+	if t.HasCoordinates() {
+		long, _ := t.Longitude()
+		lat, _ := t.Latitude()
+		return &location.GeoPoint{
+			Long: long,
+			Lat:  lat,
+		}
+	} else {
+		return nil
+	}
 }
