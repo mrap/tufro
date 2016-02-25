@@ -25,11 +25,10 @@ func main() {
 	go ListenForRequests()
 
 	s := streaming.StartUserStream(Api)
+	defer close(s.C)
+
 	for {
 		select {
-		case <-s.Quit:
-			log.Println("Closing user stream")
-			return
 		case elem := <-s.C:
 			if tweet, ok := elem.(anaconda.Tweet); ok {
 				if tweet.InReplyToUserID == mainUser.Id {
