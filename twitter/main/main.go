@@ -5,10 +5,10 @@ import (
 	"net/url"
 
 	"github.com/ChimeraCoder/anaconda"
+	. "github.com/mrap/goutil/builtin"
 	. "github.com/mrap/tufro/twitter"
 	"github.com/mrap/twitterget/api"
 	"github.com/mrap/twitterget/streaming"
-	. "github.com/mrap/util/builtin"
 )
 
 var (
