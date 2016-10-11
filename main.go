@@ -24,7 +24,7 @@ func main() {
 			c.String(http.StatusNotFound, "Unable to find [from] location: '%s'", from)
 			return
 		}
-		toLoc := location.SearchTopLocation(to, fromLoc)
+		toLoc := location.SearchTopLocation(to, fromLoc.Coordinates)
 		if toLoc == nil {
 			c.String(http.StatusNotFound, "Unable to find [to] location: '%s'", to)
 			return
