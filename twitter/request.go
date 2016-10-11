@@ -2,6 +2,7 @@ package twitter
 
 import (
 	"fmt"
+	"html"
 	"log"
 	"regexp"
 	"time"
@@ -23,7 +24,7 @@ type Request struct {
 var reLocStrings = regexp.MustCompile(`(?i)\A@\w+\s+\b(.+)\b(?:\s*->\s*|\s+to\s+)([[:^punct:]]+)\b`)
 
 func ExtractLocationStrings(tweet *anaconda.Tweet) (string, string) {
-	matches := reLocStrings.FindStringSubmatch(tweet.Text)
+	matches := reLocStrings.FindStringSubmatch(html.UnescapeString(tweet.Text))
 	if len(matches) != 3 {
 		log.Println("Could not parse two locations from tweet %s", tweet.Text)
 		return "", ""

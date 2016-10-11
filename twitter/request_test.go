@@ -2,6 +2,7 @@ package twitter_test
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ChimeraCoder/anaconda"
 	. "github.com/mrap/tufro/twitter"
@@ -70,6 +71,14 @@ var _ = Describe("Request", func() {
 			Context("with trailing hashtag phrases", func() {
 				BeforeEach(func() {
 					text += " #thanks"
+				})
+				AssertCorrectStrings()
+			})
+
+			Context("with escaped &lt and &gt characters", func() {
+				BeforeEach(func() {
+					text = strings.Replace(text, "<", "&lt", -1)
+					text = strings.Replace(text, ">", "&gt", -1)
 				})
 				AssertCorrectStrings()
 			})
