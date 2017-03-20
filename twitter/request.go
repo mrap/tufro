@@ -13,12 +13,13 @@ import (
 )
 
 type Request struct {
-	Tweet     *anaconda.Tweet
-	QueryFrom string
-	QueryTo   string
-	From      *location.Location
-	To        *location.Location
-	Routes    []route.Route
+	Tweet      *anaconda.Tweet
+	QueryFrom  string
+	QueryTo    string
+	From       *location.Location
+	To         *location.Location
+	Routes     []route.Route
+	IsRetrying bool
 }
 
 var reLocStrings = regexp.MustCompile(`(?i)\A@\w+\s+\b(.+)\b(?:\s*->\s*|\s+to\s+)([[:^punct:],]+)\b`)
@@ -73,6 +74,19 @@ func TweetGeoPoint(t *anaconda.Tweet) *location.GeoPoint {
 	}
 }
 
+func (req *Request) MessagePrefix() string {
+	return fmt.Sprintf(
+		"@%s %s -> %s",
+		req.Tweet.User.ScreenName,
+		req.QueryFrom,
+		req.QueryTo,
+	)
+}
+
+func (req *Request) MessageText(msg string) string {
+	return req.MessagePrefix() + " " + msg
+}
+
 func (req *Request) ResponseText() (string, error) {
 	if len(req.Routes) == 0 {
 		return "", fmt.Errorf("Can't form response text without any routes!")
@@ -94,6 +108,16 @@ func (req *Request) optimalRoute() *route.Route {
 	} else {
 		return &req.Routes[0]
 	}
+}
+
+func (req *Request) RouteRT() time.Duration {
+	return duration(req.optimalRoute().TotalTimeRT())
+}
+
+func (req *Request) TrafficDuration() time.Duration {
+	tripTime := duration(req.optimalRoute().TotalTime())
+	tripTimeRT := duration(req.optimalRoute().TotalTimeRT())
+	return tripTimeRT - tripTime
 }
 
 func duration(secs route.Seconds) time.Duration {
