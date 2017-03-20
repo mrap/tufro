@@ -77,8 +77,8 @@ func (req *Request) ResponseText() (string, error) {
 	if len(req.Routes) == 0 {
 		return "", fmt.Errorf("Can't form response text without any routes!")
 	}
-	tripTime := time.Duration(req.Routes[0].TotalTime()) * time.Second
-	tripTimeRT := time.Duration(req.Routes[0].TotalTimeRT()) * time.Second
+	tripTime := duration(req.optimalRoute().TotalTime())
+	tripTimeRT := duration(req.optimalRoute().TotalTimeRT())
 	return fmt.Sprintf(
 		"@%s %s -> %s right now: %.0f mins. (Usually %.0f mins)",
 		req.Tweet.User.ScreenName,
@@ -86,4 +86,16 @@ func (req *Request) ResponseText() (string, error) {
 		req.QueryTo,
 		tripTimeRT.Minutes(),
 		tripTime.Minutes()), nil
+}
+
+func (req *Request) optimalRoute() *route.Route {
+	if len(req.Routes) == 0 {
+		return nil
+	} else {
+		return &req.Routes[0]
+	}
+}
+
+func duration(secs route.Seconds) time.Duration {
+	return time.Duration(secs) * time.Second
 }
