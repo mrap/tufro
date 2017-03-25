@@ -87,6 +87,7 @@ var _ = Describe("Request", func() {
 		AssertLocationsParsed := func() {
 			AssertLocationsParsedWithPrefix("")
 			AssertLocationsParsedWithPrefix("@user ")
+			AssertLocationsParsedWithPrefix("@user @user2 ")
 		}
 
 		Context("formatted: a -> b", func() {
