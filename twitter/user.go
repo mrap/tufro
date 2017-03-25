@@ -25,7 +25,7 @@ func pruneExcess(reqs *[]*Request) {
 		var removed []*Request
 		removed, (*reqs) = (*reqs)[0:over], (*reqs)[over:]
 		for _, r := range removed {
-			r.IsCancelled = true
+			r.Cancel()
 		}
 	}
 }

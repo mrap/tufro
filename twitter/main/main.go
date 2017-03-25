@@ -67,18 +67,18 @@ func ListenForRequests() {
 	for {
 		select {
 		case req := <-requestQueue:
-			if !req.IsCancelled {
-				go ProcessNewRequest(req)
-			}
+			go ProcessNewRequest(req)
 		case req := <-responseQueue:
-			if !req.IsCancelled {
-				go RespondToRequest(req)
-			}
+			go RespondToRequest(req)
 		}
 	}
 }
 
 func ProcessNewRequest(req *Request) {
+	if req.IsCancelled {
+		return
+	}
+
 	err := req.Populate()
 	if err != nil {
 		log.Println(err)
@@ -94,6 +94,10 @@ const defaultReprocessDelay = 2 * time.Minute
 const maxTrafficDuration = 5 * time.Minute
 
 func RespondToRequest(req *Request) {
+	if req.IsCancelled {
+		return
+	}
+
 	trafficDuration := req.TrafficDuration()
 
 	if trafficDuration <= maxTrafficDuration {
@@ -145,9 +149,23 @@ func ReplyTweetMessage(user anaconda.User, text string) string {
 
 func reprocessAfter(req *Request, delay time.Duration) {
 	go func() {
+		req.CancelRetry = make(chan bool)
+		timer := time.NewTimer(delay)
+
+		defer func() {
+			close(req.CancelRetry)
+			req.CancelRetry = nil
+		}()
+
 		select {
-		case <-time.After(delay):
+		case <-req.CancelRetry:
+			if !timer.Stop() {
+				<-timer.C
+			}
+			return
+		case <-timer.C:
 			requestQueue <- req
+			return
 		}
 	}()
 }

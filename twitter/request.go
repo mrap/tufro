@@ -32,6 +32,7 @@ type Request struct {
 	Routes      []route.Route
 	IsRetrying  bool
 	IsCancelled bool
+	CancelRetry chan bool
 }
 
 var reLocStrings = regexp.MustCompile(`(?i)\A(?:@\w+\s+)*(\b.+\b)?(?:\s*->\s*|\s+to\s+)([[:^punct:],]+)\b`)
@@ -140,4 +141,13 @@ func (req *Request) TrafficDuration() time.Duration {
 
 func duration(secs route.Seconds) time.Duration {
 	return time.Duration(secs) * time.Second
+}
+
+func (req *Request) Cancel() {
+	req.IsCancelled = true
+	if req.CancelRetry != nil {
+		req.CancelRetry <- true
+		close(req.CancelRetry)
+		req.CancelRetry = nil
+	}
 }
