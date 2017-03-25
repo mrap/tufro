@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ChimeraCoder/anaconda"
 	. "github.com/mrap/tufro/twitter"
 
 	. "github.com/onsi/ginkgo"
@@ -23,14 +22,15 @@ var _ = Describe("Request", func() {
 			b = "Los Angeles"
 		})
 
-		AssertLocationsParsed := func() {
+		AssertLocationsParsedWithPrefix := func(prefix string) {
 			var _a, _b string
 
+			BeforeEach(func() {
+				text = prefix + text
+			})
+
 			JustBeforeEach(func() {
-				tweet := &anaconda.Tweet{
-					Text: text,
-				}
-				_a, _b = ExtractLocationStrings(tweet)
+				_a, _b = ExtractLocationStrings(text)
 			})
 
 			AssertCorrectStrings := func() {
@@ -84,23 +84,28 @@ var _ = Describe("Request", func() {
 			})
 		}
 
+		AssertLocationsParsed := func() {
+			AssertLocationsParsedWithPrefix("")
+			AssertLocationsParsedWithPrefix("@user ")
+		}
+
 		Context("formatted: a -> b", func() {
 			BeforeEach(func() {
-				text = fmt.Sprintf("@user %s -> %s", a, b)
+				text = fmt.Sprintf("%s -> %s", a, b)
 			})
 			AssertLocationsParsed()
 		})
 
 		Context("formatted: a->b", func() {
 			BeforeEach(func() {
-				text = fmt.Sprintf("@user %s->%s", a, b)
+				text = fmt.Sprintf("%s->%s", a, b)
 			})
 			AssertLocationsParsed()
 		})
 
 		Context("formatted: a to b", func() {
 			BeforeEach(func() {
-				text = fmt.Sprintf("@user %s to %s", a, b)
+				text = fmt.Sprintf("%s to %s", a, b)
 			})
 			AssertLocationsParsed()
 		})
@@ -109,7 +114,7 @@ var _ = Describe("Request", func() {
 			BeforeEach(func() {
 				a += ", CA"
 				b += ", CA"
-				text = fmt.Sprintf("@user %s to %s", a, b)
+				text = fmt.Sprintf("%s to %s", a, b)
 			})
 			AssertLocationsParsed()
 		})
@@ -121,7 +126,7 @@ var _ = Describe("Request", func() {
 
 			Context("using ->", func() {
 				BeforeEach(func() {
-					text = fmt.Sprintf("@user -> %s", b)
+					text = fmt.Sprintf("-> %s", b)
 				})
 				AssertLocationsParsed()
 			})
