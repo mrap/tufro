@@ -1,6 +1,7 @@
 package twitter
 
 import (
+	"bytes"
 	"fmt"
 	"html"
 	"log"
@@ -109,12 +110,22 @@ func (req *Request) ReplyPrefix() string {
 }
 
 func (req *Request) MessagePrefix() string {
-	return fmt.Sprintf(
-		"@%s %s -> %s",
-		req.Tweet.User.ScreenName,
-		req.QueryFrom,
-		req.QueryTo,
-	)
+	buf := bytes.Buffer{}
+	buf.WriteRune('@')
+	buf.WriteString(req.Tweet.User.ScreenName)
+	buf.WriteRune(' ')
+
+	if req.QueryFrom != "" {
+		buf.WriteString(req.QueryFrom)
+		buf.WriteRune(' ')
+	}
+
+	buf.WriteRune('-')
+	buf.WriteRune('>')
+	buf.WriteRune(' ')
+	buf.WriteString(req.QueryTo)
+
+	return buf.String()
 }
 
 func (req *Request) MessageText(msg string) string {
