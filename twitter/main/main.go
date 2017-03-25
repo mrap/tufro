@@ -32,10 +32,11 @@ func main() {
 	for {
 		select {
 		case elem := <-s.C:
-			if tweet, ok := elem.(anaconda.Tweet); ok {
-				if tweet.InReplyToUserID == mainUser.Id {
+			switch item := elem.(type) {
+			case anaconda.Tweet:
+				if item.InReplyToUserID == mainUser.Id {
 					requestQueue <- &Request{
-						Tweet: &tweet,
+						Tweet: &item,
 					}
 				}
 			}
