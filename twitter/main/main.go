@@ -74,23 +74,24 @@ func RespondToRequest(req *Request) {
 
 	if trafficDuration <= maxTrafficDuration {
 		msg := req.MessageText(fmt.Sprintf("GO! %.0fm drive without traffic.", req.RouteRT().Minutes()))
-		_, err := Api.PostTweet(msg, url.Values{})
-		if err != nil {
-			log.Println("Problem posting tweet", err)
-		}
+		postTweet(msg)
 	} else {
 		if !req.IsRetrying {
 			req.IsRetrying = true
 
 			msg := req.MessageText(fmt.Sprintf("WAIT. %.0fm of traffic (%.0fm total). I'll tweet you when clear.", trafficDuration.Minutes(), req.RouteRT().Minutes()))
-			_, err := Api.PostTweet(msg, url.Values{})
-			if err != nil {
-				log.Println("Problem posting tweet", err)
-			}
+			postTweet(msg)
 		}
 
 		log.Printf("Route has traffic delay of %f mins. Will retry.\n", trafficDuration.Minutes())
 		reprocessAfter(req, defaultReprocessDelay)
+	}
+}
+
+func postTweet(text string) {
+	_, err := Api.PostTweet(text, url.Values{})
+	if err != nil {
+		log.Println("Problem posting tweet", err)
 	}
 }
 
