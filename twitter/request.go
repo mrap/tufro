@@ -23,7 +23,7 @@ type Request struct {
 	IsRetrying bool
 }
 
-var reLocStrings = regexp.MustCompile(`(?i)\A@\w+\s+(\b.+\b)?(?:\s*->\s*|\s+to\s+)([[:^punct:],]+)\b`)
+var reLocStrings = regexp.MustCompile(`(?i)\A(?:@\w+\s+)?(\b.+\b)?(?:\s*->\s*|\s+to\s+)([[:^punct:],]+)\b`)
 
 func ExtractLocationStrings(tweet *anaconda.Tweet) (string, string) {
 	matches := reLocStrings.FindStringSubmatch(html.UnescapeString(tweet.Text))
