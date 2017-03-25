@@ -13,8 +13,18 @@ import (
 	"github.com/mrap/waze/route"
 )
 
+type RequestType int
+
+const (
+	RequestTypeTweet RequestType = iota
+	RequestTypeDM
+)
+
 type Request struct {
-	Tweet      *anaconda.Tweet
+	Type       RequestType
+	Message    string
+	Origin     *location.GeoPoint
+	User       anaconda.User
 	QueryFrom  string
 	QueryTo    string
 	From       *location.Location
@@ -25,42 +35,41 @@ type Request struct {
 
 var reLocStrings = regexp.MustCompile(`(?i)\A(?:@\w+\s+)?(\b.+\b)?(?:\s*->\s*|\s+to\s+)([[:^punct:],]+)\b`)
 
-func ExtractLocationStrings(tweet *anaconda.Tweet) (string, string) {
-	matches := reLocStrings.FindStringSubmatch(html.UnescapeString(tweet.Text))
+func ExtractLocationStrings(text string) (string, string) {
+	matches := reLocStrings.FindStringSubmatch(html.UnescapeString(text))
 	switch len(matches) {
 	case 2:
 		return "", matches[1]
 	case 3:
 		return matches[1], matches[2]
 	default:
-		log.Println("Could not parse two locations from tweet %s", tweet.Text)
+		log.Println("Could not parse two locations from text %s", text)
 		return "", ""
 	}
 }
 
 func (req *Request) Populate() error {
-	req.QueryFrom, req.QueryTo = ExtractLocationStrings(req.Tweet)
-	tweetOrigin := TweetGeoPoint(req.Tweet)
+	req.QueryFrom, req.QueryTo = ExtractLocationStrings(req.Message)
 
 	// Use tweet's location as from location if none given
-	if req.QueryFrom == "" && tweetOrigin != nil {
+	if req.QueryFrom == "" && req.Origin != nil {
 		req.From = &location.Location{
-			Coordinates: tweetOrigin,
+			Coordinates: req.Origin,
 		}
 	} else {
-		req.From = location.SearchTopLocation(req.QueryFrom, tweetOrigin)
+		req.From = location.SearchTopLocation(req.QueryFrom, req.Origin)
 		if req.From == nil {
 			return fmt.Errorf("Unable to find [from] location: '%s'\n", req.QueryFrom)
 		}
 
 		// Use from as tweet origin if none provided
-		if tweetOrigin == nil {
+		if req.Origin == nil {
 			req.From.PopulateCoordinates()
-			tweetOrigin = req.From.Coordinates
+			req.Origin = req.From.Coordinates
 		}
 	}
 
-	req.To = location.SearchTopLocation(req.QueryTo, tweetOrigin)
+	req.To = location.SearchTopLocation(req.QueryTo, req.Origin)
 	if req.To == nil {
 		return fmt.Errorf("Unable to find [to] location: '%s'\n", req.QueryTo)
 	}
@@ -76,45 +85,8 @@ func (req *Request) Populate() error {
 	return nil
 }
 
-func TweetGeoPoint(t *anaconda.Tweet) *location.GeoPoint {
-	if t.HasCoordinates() {
-		long, _ := t.Longitude()
-		lat, _ := t.Latitude()
-		return &location.GeoPoint{
-			Long: long,
-			Lat:  lat,
-		}
-	} else if t.Place.BoundingBox.Type != "" {
-		if bbCoords := t.Place.BoundingBox.Coordinates; len(bbCoords) > 0 {
-			points := bbCoords[0]
-			var longTotal float64
-			var latTotal float64
-			for _, c := range points {
-				longTotal += c[0]
-				latTotal += c[1]
-			}
-
-			totalCoords := float64(len(points))
-			return &location.GeoPoint{
-				Long: longTotal / totalCoords,
-				Lat:  latTotal / totalCoords,
-			}
-		}
-	}
-
-	return nil
-}
-
-func (req *Request) ReplyPrefix() string {
-	return "@" + req.Tweet.User.ScreenName + " "
-}
-
-func (req *Request) MessagePrefix() string {
+func (req *Request) ToFromText() string {
 	buf := bytes.Buffer{}
-	buf.WriteRune('@')
-	buf.WriteString(req.Tweet.User.ScreenName)
-	buf.WriteRune(' ')
-
 	if req.QueryFrom != "" {
 		buf.WriteString(req.QueryFrom)
 		buf.WriteRune(' ')
@@ -129,7 +101,7 @@ func (req *Request) MessagePrefix() string {
 }
 
 func (req *Request) MessageText(msg string) string {
-	return req.MessagePrefix() + " " + msg
+	return req.ToFromText() + " " + msg
 }
 
 func (req *Request) ResponseText() (string, error) {
@@ -140,7 +112,7 @@ func (req *Request) ResponseText() (string, error) {
 	tripTimeRT := duration(req.optimalRoute().TotalTimeRT())
 	return fmt.Sprintf(
 		"@%s %s -> %s right now: %.0f mins. (Usually %.0f mins)",
-		req.Tweet.User.ScreenName,
+		req.User.ScreenName,
 		req.QueryFrom,
 		req.QueryTo,
 		tripTimeRT.Minutes(),

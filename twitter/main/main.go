@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/url"
@@ -36,7 +37,18 @@ func main() {
 			case anaconda.Tweet:
 				if item.InReplyToUserID == mainUser.Id {
 					requestQueue <- &Request{
-						Tweet: &item,
+						Type:    RequestTypeTweet,
+						Origin:  TweetGeoPoint(&item),
+						Message: item.Text,
+						User:    item.User,
+					}
+				}
+			case anaconda.DirectMessage:
+				if item.RecipientId == mainUser.Id {
+					requestQueue <- &Request{
+						Type:    RequestTypeDM,
+						Message: item.Text,
+						User:    item.Sender,
 					}
 				}
 			}
@@ -61,8 +73,8 @@ func ProcessNewRequest(req *Request) {
 	err := req.Populate()
 	if err != nil {
 		log.Println(err)
-		msg := req.ReplyPrefix() + "Sorry: " + err.Error()
-		postTweet(msg)
+		msg := "Sorry: " + err.Error()
+		reply(req, msg)
 		return
 	}
 
@@ -77,13 +89,13 @@ func RespondToRequest(req *Request) {
 
 	if trafficDuration <= maxTrafficDuration {
 		msg := req.MessageText(fmt.Sprintf("GO! %.0fm drive without traffic.", req.RouteRT().Minutes()))
-		postTweet(msg)
+		reply(req, msg)
 	} else {
 		if !req.IsRetrying {
 			req.IsRetrying = true
 
-			msg := req.MessageText(fmt.Sprintf("WAIT. %.0fm of traffic (%.0fm total). I'll tweet you when clear.", trafficDuration.Minutes(), req.RouteRT().Minutes()))
-			postTweet(msg)
+			msg := req.MessageText(fmt.Sprintf("WAIT. %.0fm of traffic (%.0fm total). I'll notify you when clear.", trafficDuration.Minutes(), req.RouteRT().Minutes()))
+			reply(req, msg)
 		}
 
 		log.Printf("Route has traffic delay of %f mins. Will retry.\n", trafficDuration.Minutes())
@@ -91,11 +103,35 @@ func RespondToRequest(req *Request) {
 	}
 }
 
-func postTweet(text string) {
-	_, err := Api.PostTweet(text, url.Values{})
+func reply(req *Request, msg string) {
+	if req.Type == RequestTypeTweet {
+		postTweet(req.User, msg)
+	} else {
+		sendDM(req.User, msg)
+	}
+}
+
+func postTweet(to anaconda.User, text string) {
+	_, err := Api.PostTweet(ReplyTweetMessage(to, text), url.Values{})
 	if err != nil {
 		log.Println("Problem posting tweet", err)
 	}
+}
+
+func sendDM(to anaconda.User, text string) {
+	_, err := Api.PostDMToUserId(text, to.Id)
+	if err != nil {
+		log.Println("Problem sending dm", err)
+	}
+}
+
+func ReplyTweetMessage(user anaconda.User, text string) string {
+	buf := bytes.Buffer{}
+	buf.WriteRune('@')
+	buf.WriteString(user.ScreenName)
+	buf.WriteRune(' ')
+	buf.WriteString(text)
+	return buf.String()
 }
 
 func reprocessAfter(req *Request, delay time.Duration) {

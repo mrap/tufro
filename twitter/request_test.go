@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ChimeraCoder/anaconda"
 	. "github.com/mrap/tufro/twitter"
 
 	. "github.com/onsi/ginkgo"
@@ -31,10 +30,7 @@ var _ = Describe("Request", func() {
 			})
 
 			JustBeforeEach(func() {
-				tweet := &anaconda.Tweet{
-					Text: text,
-				}
-				_a, _b = ExtractLocationStrings(tweet)
+				_a, _b = ExtractLocationStrings(text)
 			})
 
 			AssertCorrectStrings := func() {
