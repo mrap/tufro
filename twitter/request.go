@@ -54,8 +54,10 @@ func (req *Request) Populate() error {
 
 	var err error
 	req.Routes, err = route.GetRoutes(req.From, req.To)
-	if err != nil || len(req.Routes) == 0 {
-		return fmt.Errorf("Unable to find routes from '%s' to '%s'. Error: %s", req.QueryFrom, req.QueryTo, err)
+	if len(req.Routes) == 0 {
+		return fmt.Errorf("Unable to find routes from '%s' to '%s'", req.QueryFrom, req.QueryTo)
+	} else if err != nil {
+		return fmt.Errorf("Unable to find routes from '%s' to '%s' with error: %s", req.QueryFrom, req.QueryTo, err.Error())
 	}
 
 	return nil
@@ -72,6 +74,10 @@ func TweetGeoPoint(t *anaconda.Tweet) *location.GeoPoint {
 	} else {
 		return nil
 	}
+}
+
+func (req *Request) ReplyPrefix() string {
+	return "@" + req.Tweet.User.ScreenName + " "
 }
 
 func (req *Request) MessagePrefix() string {

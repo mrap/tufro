@@ -60,6 +60,8 @@ func ProcessNewRequest(req *Request) {
 	err := req.Populate()
 	if err != nil {
 		log.Println(err)
+		msg := req.ReplyPrefix() + "Sorry: " + err.Error()
+		postTweet(msg)
 		return
 	}
 
