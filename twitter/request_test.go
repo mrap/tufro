@@ -104,6 +104,15 @@ var _ = Describe("Request", func() {
 			})
 			AssertLocationsParsed()
 		})
+
+		Context("formatted with region commas", func() {
+			BeforeEach(func() {
+				a += ", CA"
+				b += ", CA"
+				text = fmt.Sprintf("@user %s to %s", a, b)
+			})
+			AssertLocationsParsed()
+		})
 	})
 
 })

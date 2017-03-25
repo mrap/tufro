@@ -13,15 +13,16 @@ import (
 )
 
 type Request struct {
-	Tweet     *anaconda.Tweet
-	QueryFrom string
-	QueryTo   string
-	From      *location.Location
-	To        *location.Location
-	Routes    []route.Route
+	Tweet      *anaconda.Tweet
+	QueryFrom  string
+	QueryTo    string
+	From       *location.Location
+	To         *location.Location
+	Routes     []route.Route
+	IsRetrying bool
 }
 
-var reLocStrings = regexp.MustCompile(`(?i)\A@\w+\s+\b(.+)\b(?:\s*->\s*|\s+to\s+)([[:^punct:]]+)\b`)
+var reLocStrings = regexp.MustCompile(`(?i)\A@\w+\s+\b(.+)\b(?:\s*->\s*|\s+to\s+)([[:^punct:],]+)\b`)
 
 func ExtractLocationStrings(tweet *anaconda.Tweet) (string, string) {
 	matches := reLocStrings.FindStringSubmatch(html.UnescapeString(tweet.Text))
@@ -73,12 +74,25 @@ func TweetGeoPoint(t *anaconda.Tweet) *location.GeoPoint {
 	}
 }
 
+func (req *Request) MessagePrefix() string {
+	return fmt.Sprintf(
+		"@%s %s -> %s",
+		req.Tweet.User.ScreenName,
+		req.QueryFrom,
+		req.QueryTo,
+	)
+}
+
+func (req *Request) MessageText(msg string) string {
+	return req.MessagePrefix() + " " + msg
+}
+
 func (req *Request) ResponseText() (string, error) {
 	if len(req.Routes) == 0 {
 		return "", fmt.Errorf("Can't form response text without any routes!")
 	}
-	tripTime := time.Duration(req.Routes[0].TotalTime()) * time.Second
-	tripTimeRT := time.Duration(req.Routes[0].TotalTimeRT()) * time.Second
+	tripTime := duration(req.optimalRoute().TotalTime())
+	tripTimeRT := duration(req.optimalRoute().TotalTimeRT())
 	return fmt.Sprintf(
 		"@%s %s -> %s right now: %.0f mins. (Usually %.0f mins)",
 		req.Tweet.User.ScreenName,
@@ -86,4 +100,26 @@ func (req *Request) ResponseText() (string, error) {
 		req.QueryTo,
 		tripTimeRT.Minutes(),
 		tripTime.Minutes()), nil
+}
+
+func (req *Request) optimalRoute() *route.Route {
+	if len(req.Routes) == 0 {
+		return nil
+	} else {
+		return &req.Routes[0]
+	}
+}
+
+func (req *Request) RouteRT() time.Duration {
+	return duration(req.optimalRoute().TotalTimeRT())
+}
+
+func (req *Request) TrafficDuration() time.Duration {
+	tripTime := duration(req.optimalRoute().TotalTime())
+	tripTimeRT := duration(req.optimalRoute().TotalTimeRT())
+	return tripTimeRT - tripTime
+}
+
+func duration(secs route.Seconds) time.Duration {
+	return time.Duration(secs) * time.Second
 }

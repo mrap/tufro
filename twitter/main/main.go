@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/url"
+	"time"
 
 	"github.com/ChimeraCoder/anaconda"
 	. "github.com/mrap/goutil/builtin"
@@ -60,17 +62,43 @@ func ProcessNewRequest(req *Request) {
 		log.Println(err)
 		return
 	}
+
 	responseQueue <- req
 }
 
+const defaultReprocessDelay = 2 * time.Minute
+const maxTrafficDuration = 5 * time.Minute
+
 func RespondToRequest(req *Request) {
-	text, err := req.ResponseText()
-	if err != nil {
-		log.Println("Couldn't generate respond text", err.Error())
-		return
+	trafficDuration := req.TrafficDuration()
+
+	if trafficDuration <= maxTrafficDuration {
+		msg := req.MessageText(fmt.Sprintf("GO! %.0fm drive without traffic.", req.RouteRT().Minutes()))
+		_, err := Api.PostTweet(msg, url.Values{})
+		if err != nil {
+			log.Println("Problem posting tweet", err)
+		}
+	} else {
+		if !req.IsRetrying {
+			req.IsRetrying = true
+
+			msg := req.MessageText(fmt.Sprintf("WAIT. %.0fm of traffic (%.0fm total). I'll tweet you when clear.", trafficDuration.Minutes(), req.RouteRT().Minutes()))
+			_, err := Api.PostTweet(msg, url.Values{})
+			if err != nil {
+				log.Println("Problem posting tweet", err)
+			}
+		}
+
+		log.Printf("Route has traffic delay of %f mins. Will retry.\n", trafficDuration.Minutes())
+		reprocessAfter(req, defaultReprocessDelay)
 	}
-	_, err = Api.PostTweet(text, url.Values{})
-	if err != nil {
-		log.Println("Problem posting tweet", err)
-	}
+}
+
+func reprocessAfter(req *Request, delay time.Duration) {
+	go func() {
+		select {
+		case <-time.After(delay):
+			requestQueue <- req
+		}
+	}()
 }
