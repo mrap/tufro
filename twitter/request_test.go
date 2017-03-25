@@ -104,6 +104,20 @@ var _ = Describe("Request", func() {
 			AssertLocationsParsed()
 		})
 
+		Context("formatted: a > b", func() {
+			BeforeEach(func() {
+				text = fmt.Sprintf("%s > %s", a, b)
+			})
+			AssertLocationsParsed()
+		})
+
+		Context("formatted: a>b", func() {
+			BeforeEach(func() {
+				text = fmt.Sprintf("%s>%s", a, b)
+			})
+			AssertLocationsParsed()
+		})
+
 		Context("formatted: a to b", func() {
 			BeforeEach(func() {
 				text = fmt.Sprintf("%s to %s", a, b)

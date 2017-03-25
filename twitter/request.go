@@ -35,7 +35,7 @@ type Request struct {
 	CancelRetry chan bool
 }
 
-var reLocStrings = regexp.MustCompile(`(?i)\A(?:@\w+\s+)*(\b.+\b)?(?:\s*->\s*|\s+to\s+)([[:^punct:],]+)\b`)
+var reLocStrings = regexp.MustCompile(`(?i)\A(?:@\w+\s+)*(\b.+\b)?(?:\s*-?>\s*|\s+to\s+)([[:^punct:],]+)\b`)
 
 func ExtractLocationStrings(text string) (string, string) {
 	matches := reLocStrings.FindStringSubmatch(html.UnescapeString(text))
