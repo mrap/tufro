@@ -1,6 +1,7 @@
 package twitter
 
 import (
+	"bytes"
 	"fmt"
 	"html"
 	"log"
@@ -22,31 +23,43 @@ type Request struct {
 	IsRetrying bool
 }
 
-var reLocStrings = regexp.MustCompile(`(?i)\A@\w+\s+\b(.+)\b(?:\s*->\s*|\s+to\s+)([[:^punct:],]+)\b`)
+var reLocStrings = regexp.MustCompile(`(?i)\A@\w+\s+(\b.+\b)?(?:\s*->\s*|\s+to\s+)([[:^punct:],]+)\b`)
 
 func ExtractLocationStrings(tweet *anaconda.Tweet) (string, string) {
 	matches := reLocStrings.FindStringSubmatch(html.UnescapeString(tweet.Text))
-	if len(matches) != 3 {
+	switch len(matches) {
+	case 2:
+		return "", matches[1]
+	case 3:
+		return matches[1], matches[2]
+	default:
 		log.Println("Could not parse two locations from tweet %s", tweet.Text)
 		return "", ""
-	} else {
-		return matches[1], matches[2]
 	}
 }
 
 func (req *Request) Populate() error {
 	req.QueryFrom, req.QueryTo = ExtractLocationStrings(req.Tweet)
-
 	tweetOrigin := TweetGeoPoint(req.Tweet)
-	req.From = location.SearchTopLocation(req.QueryFrom, tweetOrigin)
-	if req.From == nil {
-		return fmt.Errorf("Unable to find [from] location: '%s'\n", req.QueryFrom)
+
+	// Use tweet's location as from location if none given
+	if req.QueryFrom == "" && tweetOrigin != nil {
+		req.From = &location.Location{
+			Coordinates: tweetOrigin,
+		}
+	} else {
+		req.From = location.SearchTopLocation(req.QueryFrom, tweetOrigin)
+		if req.From == nil {
+			return fmt.Errorf("Unable to find [from] location: '%s'\n", req.QueryFrom)
+		}
+
+		// Use from as tweet origin if none provided
+		if tweetOrigin == nil {
+			req.From.PopulateCoordinates()
+			tweetOrigin = req.From.Coordinates
+		}
 	}
 
-	if tweetOrigin == nil {
-		req.From.PopulateCoordinates()
-		tweetOrigin = req.From.Coordinates
-	}
 	req.To = location.SearchTopLocation(req.QueryTo, tweetOrigin)
 	if req.To == nil {
 		return fmt.Errorf("Unable to find [to] location: '%s'\n", req.QueryTo)
@@ -71,9 +84,25 @@ func TweetGeoPoint(t *anaconda.Tweet) *location.GeoPoint {
 			Long: long,
 			Lat:  lat,
 		}
-	} else {
-		return nil
+	} else if t.Place.BoundingBox.Type != "" {
+		if bbCoords := t.Place.BoundingBox.Coordinates; len(bbCoords) > 0 {
+			points := bbCoords[0]
+			var longTotal float64
+			var latTotal float64
+			for _, c := range points {
+				longTotal += c[0]
+				latTotal += c[1]
+			}
+
+			totalCoords := float64(len(points))
+			return &location.GeoPoint{
+				Long: longTotal / totalCoords,
+				Lat:  latTotal / totalCoords,
+			}
+		}
 	}
+
+	return nil
 }
 
 func (req *Request) ReplyPrefix() string {
@@ -81,12 +110,22 @@ func (req *Request) ReplyPrefix() string {
 }
 
 func (req *Request) MessagePrefix() string {
-	return fmt.Sprintf(
-		"@%s %s -> %s",
-		req.Tweet.User.ScreenName,
-		req.QueryFrom,
-		req.QueryTo,
-	)
+	buf := bytes.Buffer{}
+	buf.WriteRune('@')
+	buf.WriteString(req.Tweet.User.ScreenName)
+	buf.WriteRune(' ')
+
+	if req.QueryFrom != "" {
+		buf.WriteString(req.QueryFrom)
+		buf.WriteRune(' ')
+	}
+
+	buf.WriteRune('-')
+	buf.WriteRune('>')
+	buf.WriteRune(' ')
+	buf.WriteString(req.QueryTo)
+
+	return buf.String()
 }
 
 func (req *Request) MessageText(msg string) string {

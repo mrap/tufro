@@ -113,6 +113,19 @@ var _ = Describe("Request", func() {
 			})
 			AssertLocationsParsed()
 		})
+
+		Context("without first location", func() {
+			BeforeEach(func() {
+				a = ""
+			})
+
+			Context("using ->", func() {
+				BeforeEach(func() {
+					text = fmt.Sprintf("@user -> %s", b)
+				})
+				AssertLocationsParsed()
+			})
+		})
 	})
 
 })
