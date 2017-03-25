@@ -21,16 +21,17 @@ const (
 )
 
 type Request struct {
-	Type       RequestType
-	Message    string
-	Origin     *location.GeoPoint
-	User       anaconda.User
-	QueryFrom  string
-	QueryTo    string
-	From       *location.Location
-	To         *location.Location
-	Routes     []route.Route
-	IsRetrying bool
+	Type        RequestType
+	Message     string
+	Origin      *location.GeoPoint
+	User        anaconda.User
+	QueryFrom   string
+	QueryTo     string
+	From        *location.Location
+	To          *location.Location
+	Routes      []route.Route
+	IsRetrying  bool
+	IsCancelled bool
 }
 
 var reLocStrings = regexp.MustCompile(`(?i)\A(?:@\w+\s+)*(\b.+\b)?(?:\s*->\s*|\s+to\s+)([[:^punct:],]+)\b`)

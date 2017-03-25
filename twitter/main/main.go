@@ -18,6 +18,7 @@ var (
 	Api           *anaconda.TwitterApi
 	requestQueue  chan (*Request)
 	responseQueue chan (*Request)
+	userRequests  = make(UserRequests)
 )
 
 func main() {
@@ -36,20 +37,24 @@ func main() {
 			switch item := elem.(type) {
 			case anaconda.Tweet:
 				if item.InReplyToUserID == mainUser.Id {
-					requestQueue <- &Request{
+					req := &Request{
 						Type:    RequestTypeTweet,
 						Origin:  TweetGeoPoint(&item),
 						Message: item.Text,
 						User:    item.User,
 					}
+					userRequests.Add(req)
+					requestQueue <- req
 				}
 			case anaconda.DirectMessage:
 				if item.RecipientId == mainUser.Id {
-					requestQueue <- &Request{
+					req := &Request{
 						Type:    RequestTypeDM,
 						Message: item.Text,
 						User:    item.Sender,
 					}
+					userRequests.Add(req)
+					requestQueue <- req
 				}
 			}
 		}
@@ -62,9 +67,13 @@ func ListenForRequests() {
 	for {
 		select {
 		case req := <-requestQueue:
-			go ProcessNewRequest(req)
+			if !req.IsCancelled {
+				go ProcessNewRequest(req)
+			}
 		case req := <-responseQueue:
-			go RespondToRequest(req)
+			if !req.IsCancelled {
+				go RespondToRequest(req)
+			}
 		}
 	}
 }
