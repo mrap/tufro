@@ -1,0 +1,280 @@
+{
+    "memo": "055e7723217075b8541b355c65ffc8d2a646898bdf9a6fdbc285935b4de8c096",
+    "projects": [
+        {
+            "name": "github.com/BurntSushi/toml",
+            "branch": "master",
+            "revision": "312db06c6c6dbfa9899e58564bacfaa584f18ab7",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/ChimeraCoder/anaconda",
+            "branch": "master",
+            "revision": "afffdbac178c0e78746ea42d7c1af963cb7ef28e",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/ChimeraCoder/tokenbucket",
+            "branch": "master",
+            "revision": "c5a927568de7aad8a58127d80bcd36ca4e71e454",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/azr/backoff",
+            "branch": "master",
+            "revision": "53511d3c733003985b0b76f733df1f4d0095ee6a",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/dustin/go-jsonpointer",
+            "branch": "master",
+            "revision": "2efc9fef1d9421a8d252a32e20beb10cecd2bbca",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/dustin/gojson",
+            "branch": "master",
+            "revision": "af16e0e771e2ed110f2785564ae33931de8829e4",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/garyburd/go-oauth",
+            "branch": "master",
+            "revision": "255d509a6f270332ffcaef6723047891319a2ffb",
+            "packages": [
+                "oauth"
+            ]
+        },
+        {
+            "name": "github.com/gin-gonic/gin",
+            "revision": "f931d1ea80ae95a6fc739213cdd9399bd2967fb6",
+            "packages": [
+                ".",
+                "binding",
+                "render"
+            ]
+        },
+        {
+            "name": "github.com/golang/protobuf",
+            "branch": "master",
+            "revision": "69b215d01a5606c843240eab4937eab3acee6530",
+            "packages": [
+                "proto"
+            ]
+        },
+        {
+            "name": "github.com/hashicorp/hcl",
+            "branch": "master",
+            "revision": "1c284ec98f4b398443cbabb0d9197f7f4cc0077c",
+            "packages": [
+                ".",
+                "hcl/ast",
+                "hcl/parser",
+                "hcl/scanner",
+                "hcl/strconv",
+                "hcl/token",
+                "json/parser",
+                "json/scanner",
+                "json/token"
+            ]
+        },
+        {
+            "name": "github.com/kr/pretty",
+            "branch": "master",
+            "revision": "e6ac2fc51e89a3249e82157fa0bb7a18ef9dd5bb",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/kr/text",
+            "branch": "master",
+            "revision": "bb797dc4fb8320488f47bf11de07a733d7233e1f",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/magiconair/properties",
+            "branch": "master",
+            "revision": "c81f9d71af8f8cba1466501d30326b99a4e56c19",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/manucorporat/sse",
+            "revision": "ee05b128a739a0fb76c7ebd3ae4810c1de808d6d",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/mitchellh/mapstructure",
+            "branch": "master",
+            "revision": "d2dd0262208475919e1a362f675cfc0e7c10e905",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/mrap/goutil",
+            "branch": "master",
+            "revision": "2443d0972f0d8a15340a4c13b7df44212782398c",
+            "packages": [
+                "builtin"
+            ]
+        },
+        {
+            "name": "github.com/mrap/twitterget",
+            "branch": "master",
+            "revision": "daef6f29bcd8a9212fb44b42431352c4eae276dd",
+            "packages": [
+                "api",
+                "streaming"
+            ]
+        },
+        {
+            "name": "github.com/mrap/waze",
+            "branch": "master",
+            "revision": "7bdf6b0f48141a8dc71295cc3fcf5c36a6824556",
+            "packages": [
+                "api",
+                "location",
+                "route"
+            ]
+        },
+        {
+            "name": "github.com/onsi/ginkgo",
+            "revision": "ac3d45ddd7ef5c4d7fc4d037b615a81f4d67981e",
+            "packages": [
+                ".",
+                "config",
+                "internal/codelocation",
+                "internal/containernode",
+                "internal/failer",
+                "internal/leafnodes",
+                "internal/remote",
+                "internal/spec",
+                "internal/specrunner",
+                "internal/suite",
+                "internal/testingtproxy",
+                "internal/writer",
+                "reporters",
+                "reporters/stenographer",
+                "types"
+            ]
+        },
+        {
+            "name": "github.com/onsi/gomega",
+            "revision": "a1094b2db2d4845621602c667bd4ccf09834544e",
+            "packages": [
+                ".",
+                "format",
+                "internal/assertion",
+                "internal/asyncassertion",
+                "internal/oraclematcher",
+                "internal/testingtsupport",
+                "matchers",
+                "matchers/support/goraph/bipartitegraph",
+                "matchers/support/goraph/edge",
+                "matchers/support/goraph/node",
+                "matchers/support/goraph/util",
+                "types"
+            ]
+        },
+        {
+            "name": "github.com/pquerna/ffjson",
+            "branch": "master",
+            "revision": "7327d038fae6927740461371efe7f330c23c3e5f",
+            "packages": [
+                "ffjson",
+                "fflib/v1",
+                "fflib/v1/internal"
+            ]
+        },
+        {
+            "name": "github.com/spf13/cast",
+            "branch": "master",
+            "revision": "ee7b3e0353166ab1f3a605294ac8cd2b77953778",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/spf13/jwalterweatherman",
+            "branch": "master",
+            "revision": "d00654080cddbd2b082acaa74007cb94a2b40866",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/spf13/pflag",
+            "branch": "master",
+            "revision": "7f60f83a2c81bc3c3c0d5297f61ddfa68da9d3b7",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/spf13/viper",
+            "branch": "master",
+            "revision": "c975dc1b4eacf4ec7fdbf0873638de5d090ba323",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "golang.org/x/net",
+            "branch": "master",
+            "revision": "b1a2d6e8c8b5fc8f601ead62536f02a8e1b6217d",
+            "packages": [
+                "context"
+            ]
+        },
+        {
+            "name": "golang.org/x/sys",
+            "branch": "master",
+            "revision": "478fcf54317e52ab69f40bb4c7a1520288d7f7ea",
+            "packages": [
+                "unix"
+            ]
+        },
+        {
+            "name": "gopkg.in/fsnotify.v1",
+            "branch": "master",
+            "revision": "629574ca2a5df945712d3079857300b5e4da0236",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "gopkg.in/go-playground/validator.v8",
+            "version": "v8.17",
+            "revision": "f38559b4893a333e7122cf42155be352c9b5d7c6",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "gopkg.in/yaml.v2",
+            "revision": "e4d366fc3c7938e2958e662b4258c7a89e1f0e3e",
+            "packages": [
+                "."
+            ]
+        }
+    ]
+}
