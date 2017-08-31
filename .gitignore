@@ -23,6 +23,7 @@ _testmain.go
 *.test
 *.prof
 
-secrets.json
+secrets.*
+!secrets.*.example
 
 vendor
