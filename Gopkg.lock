@@ -101,7 +101,7 @@
   branch = "master"
   name = "github.com/mrap/waze"
   packages = ["api","location","route"]
-  revision = "9660a3fcaf8b2657d79e4e2e741e06f1c1f9e82e"
+  revision = "16d479c79002c94125ca191403b2d60760237819"
 
 [[projects]]
   name = "github.com/onsi/ginkgo"
