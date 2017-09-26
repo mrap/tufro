@@ -136,24 +136,35 @@ func (s *Server) ProcessNewRequest(req *Request) {
 }
 
 const defaultReprocessDelay = 2 * time.Minute
-const maxTrafficDuration = 5 * time.Minute
+const maxTrafficDelayFactor = 1.33
+const busyTrafficDelayFactor = 1 + ((maxTrafficDelayFactor - 1) / 2)
 
 func (s *Server) RespondToRequest(req *Request) {
 	if req.IsCancelled {
 		return
 	}
 
+	trafficDelayFactor := float64(req.RouteTimeRT() / req.RouteTime())
 	trafficDuration := req.TrafficDuration()
 
-	if trafficDuration <= maxTrafficDuration {
-		msg := req.MessageText(fmt.Sprintf("GO! %.0fm drive without traffic.", req.RouteRT().Minutes()))
+	if trafficDelayFactor <= maxTrafficDelayFactor {
+		var trafficString string
+		if trafficDuration.Minutes() < 1 {
+			trafficString = "Traffic: absolutely none!"
+		} else if trafficDelayFactor < (busyTrafficDelayFactor) {
+			trafficString = fmt.Sprintf("Traffic: bearable, %.0fm delay", trafficDuration.Minutes())
+		} else {
+			trafficString = fmt.Sprintf("Traffic: getting busy, %.0fm delay", trafficDuration.Minutes())
+		}
+
+		msg := req.MessageText(fmt.Sprintf("GO! %.0fm drive. %s", req.RouteTimeRT().Minutes(), trafficString))
 		s.reply(req, msg)
 		return
 	}
 
 	if !req.IsRetrying {
 		req.IsRetrying = true
-		msg := req.MessageText(fmt.Sprintf("WAIT. %.0fm of traffic (%.0fm total). I'll notify you when clear.", trafficDuration.Minutes(), req.RouteRT().Minutes()))
+		msg := req.MessageText(fmt.Sprintf("WAIT. %.0fm of traffic (%.0fm total). I'll notify you when clear.", trafficDuration.Minutes(), req.RouteTimeRT().Minutes()))
 		s.reply(req, msg)
 	}
 

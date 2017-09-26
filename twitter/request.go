@@ -139,14 +139,16 @@ func (req *Request) optimalRoute() *route.Route {
 	}
 }
 
-func (req *Request) RouteRT() time.Duration {
+func (req *Request) RouteTime() time.Duration {
+	return duration(req.optimalRoute().TotalTime())
+}
+
+func (req *Request) RouteTimeRT() time.Duration {
 	return duration(req.optimalRoute().TotalTimeRT())
 }
 
 func (req *Request) TrafficDuration() time.Duration {
-	tripTime := duration(req.optimalRoute().TotalTime())
-	tripTimeRT := duration(req.optimalRoute().TotalTimeRT())
-	return tripTimeRT - tripTime
+	return req.RouteTimeRT() - req.RouteTime()
 }
 
 func duration(secs route.Seconds) time.Duration {
