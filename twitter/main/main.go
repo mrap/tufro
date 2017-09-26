@@ -14,67 +14,112 @@ import (
 	"github.com/mrap/twitterget/streaming"
 )
 
-var (
-	Api           *anaconda.TwitterApi
+func main() {
+	s := NewServer()
+	s.start()
+}
+
+type Server struct {
+	api           *anaconda.TwitterApi
+	mainUser      anaconda.User
 	requestQueue  chan (*Request)
 	responseQueue chan (*Request)
-	userRequests  = make(UserRequests)
-)
+	userRequests  UserRequests
+}
 
-func main() {
-	Api = api.NewApi(*api.LoadAuthConfig("secrets"))
-	mainUser, err := Api.GetSelf(url.Values{})
+func NewServer() *Server {
+	s := &Server{
+		requestQueue:  make(chan *Request),
+		responseQueue: make(chan *Request),
+		userRequests:  make(UserRequests),
+	}
+
+	err := s.refreshApi()
 	PanicIf(err)
 
-	go ListenForRequests()
+	return s
+}
 
-	s := streaming.StartUserStream(Api)
-	defer close(s.C)
+func (s *Server) refreshApi() (err error) {
+	if s.api != nil {
+		s.api.Close()
+		s.api = nil
+	}
+
+	s.api = api.NewApi(*api.LoadAuthConfig("secrets"))
+	s.mainUser, err = s.api.GetSelf(url.Values{})
+
+	return err
+}
+
+func (s *Server) start() {
+	go s.ListenForRequests()
 
 	for {
-		select {
-		case elem := <-s.C:
-			switch item := elem.(type) {
-			case anaconda.Tweet:
-				if item.InReplyToUserID == mainUser.Id {
-					req := &Request{
-						Type:    RequestTypeTweet,
-						Origin:  TweetGeoPoint(&item),
-						Message: item.Text,
-						User:    item.User,
-					}
-					userRequests.Add(req)
-					requestQueue <- req
-				}
-			case anaconda.DirectMessage:
-				if item.RecipientId == mainUser.Id {
-					req := &Request{
-						Type:    RequestTypeDM,
-						Message: item.Text,
-						User:    item.Sender,
-					}
-					userRequests.Add(req)
-					requestQueue <- req
-				}
+		s.listenForTwitterEvents()
+		err := s.refreshApi()
+		PanicIf(err)
+	}
+}
+
+func (s *Server) listenForTwitterEvents() {
+	stream := streaming.StartUserStream(s.api)
+	defer stream.Stop()
+
+	for elem := range stream.C {
+		switch item := elem.(type) {
+		case anaconda.Tweet:
+			if item.InReplyToUserID == s.mainUser.Id {
+				req := NewRequest(RequestTypeTweet, item.Text, item.User)
+				req.Origin = TweetGeoPoint(&item)
+				s.enqueueRequest(req)
+			}
+		case anaconda.DirectMessage:
+			if item.RecipientId == s.mainUser.Id {
+				req := NewRequest(RequestTypeDM, item.Text, item.Sender)
+				s.enqueueRequest(req)
 			}
 		}
 	}
+
+	log.Println("listenForTwitterEvents stream closed")
 }
 
-func ListenForRequests() {
-	requestQueue = make(chan *Request)
-	responseQueue = make(chan *Request)
+func (s *Server) ListenForRequests() {
 	for {
 		select {
-		case req := <-requestQueue:
-			go ProcessNewRequest(req)
-		case req := <-responseQueue:
-			go RespondToRequest(req)
+		case req := <-s.requestQueue:
+			go s.ProcessNewRequest(req)
+		case req := <-s.responseQueue:
+			go s.RespondToRequest(req)
 		}
 	}
 }
 
-func ProcessNewRequest(req *Request) {
+func logRequest(req *Request) {
+	var requestType string
+	switch req.Type {
+	case RequestTypeTweet:
+		requestType = "T"
+	case RequestTypeDM:
+		requestType = "DM"
+	}
+
+	originString := ""
+	if req.Origin != nil {
+		originString = fmt.Sprintf("x=%s y=%s", req.Origin.LongString(), req.Origin.LatString())
+	}
+
+	log.Printf("REQUEST(%s) from %s:\n%s\nOrigin: %s", requestType, req.User.ScreenName, req.Message, originString)
+}
+
+func (s *Server) enqueueRequest(req *Request) {
+	logRequest(req)
+	s.userRequests.Add(req)
+	s.requestQueue <- req
+}
+
+func (s *Server) ProcessNewRequest(req *Request) {
 	if req.IsCancelled {
 		return
 	}
@@ -83,17 +128,17 @@ func ProcessNewRequest(req *Request) {
 	if err != nil {
 		log.Println(err)
 		msg := "Sorry: " + err.Error()
-		reply(req, msg)
+		s.reply(req, msg)
 		return
 	}
 
-	responseQueue <- req
+	s.responseQueue <- req
 }
 
 const defaultReprocessDelay = 2 * time.Minute
 const maxTrafficDuration = 5 * time.Minute
 
-func RespondToRequest(req *Request) {
+func (s *Server) RespondToRequest(req *Request) {
 	if req.IsCancelled {
 		return
 	}
@@ -102,37 +147,37 @@ func RespondToRequest(req *Request) {
 
 	if trafficDuration <= maxTrafficDuration {
 		msg := req.MessageText(fmt.Sprintf("GO! %.0fm drive without traffic.", req.RouteRT().Minutes()))
-		reply(req, msg)
-	} else {
-		if !req.IsRetrying {
-			req.IsRetrying = true
-
-			msg := req.MessageText(fmt.Sprintf("WAIT. %.0fm of traffic (%.0fm total). I'll notify you when clear.", trafficDuration.Minutes(), req.RouteRT().Minutes()))
-			reply(req, msg)
-		}
-
-		log.Printf("Route has traffic delay of %f mins. Will retry.\n", trafficDuration.Minutes())
-		reprocessAfter(req, defaultReprocessDelay)
+		s.reply(req, msg)
+		return
 	}
+
+	if !req.IsRetrying {
+		req.IsRetrying = true
+		msg := req.MessageText(fmt.Sprintf("WAIT. %.0fm of traffic (%.0fm total). I'll notify you when clear.", trafficDuration.Minutes(), req.RouteRT().Minutes()))
+		s.reply(req, msg)
+	}
+
+	log.Printf("Route has traffic delay of %f mins. Will retry.\n", trafficDuration.Minutes())
+	s.reprocessAfter(req, defaultReprocessDelay)
 }
 
-func reply(req *Request, msg string) {
+func (s *Server) reply(req *Request, msg string) {
 	if req.Type == RequestTypeTweet {
-		postTweet(req.User, msg)
+		s.postTweet(req.User, msg)
 	} else {
-		sendDM(req.User, msg)
+		s.sendDM(req.User, msg)
 	}
 }
 
-func postTweet(to anaconda.User, text string) {
-	_, err := Api.PostTweet(ReplyTweetMessage(to, text), url.Values{})
+func (s *Server) postTweet(to anaconda.User, text string) {
+	_, err := s.api.PostTweet(ReplyTweetMessage(to, text), url.Values{})
 	if err != nil {
 		log.Println("Problem posting tweet", err)
 	}
 }
 
-func sendDM(to anaconda.User, text string) {
-	_, err := Api.PostDMToUserId(text, to.Id)
+func (s *Server) sendDM(to anaconda.User, text string) {
+	_, err := s.api.PostDMToUserId(text, to.Id)
 	if err != nil {
 		log.Println("Problem sending dm", err)
 	}
@@ -147,24 +192,24 @@ func ReplyTweetMessage(user anaconda.User, text string) string {
 	return buf.String()
 }
 
-func reprocessAfter(req *Request, delay time.Duration) {
-	go func() {
-		req.CancelRetry = make(chan bool)
-		timer := time.NewTimer(delay)
+func (s *Server) reprocessAfter(req *Request, delay time.Duration) {
+	if req.IsCancelled {
+		return
+	}
 
+	go func() {
+		timer := time.NewTimer(delay)
 		defer func() {
-			close(req.CancelRetry)
-			req.CancelRetry = nil
+			if !timer.Stop() {
+				<-timer.C
+			}
 		}()
 
 		select {
 		case <-req.CancelRetry:
-			if !timer.Stop() {
-				<-timer.C
-			}
 			return
 		case <-timer.C:
-			requestQueue <- req
+			s.requestQueue <- req
 			return
 		}
 	}()

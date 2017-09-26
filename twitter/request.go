@@ -35,6 +35,16 @@ type Request struct {
 	CancelRetry chan bool
 }
 
+func NewRequest(requestType RequestType, message string, user anaconda.User) *Request {
+	return &Request{
+		Type:        requestType,
+		Message:     message,
+		User:        user,
+		IsCancelled: false,
+		CancelRetry: make(chan bool),
+	}
+}
+
 var reLocStrings = regexp.MustCompile(`(?i)\A(?:@\w+\s+)*(\b.+\b)?(?:\s*-?>\s*|\s+to\s+)([[:^punct:],]+)\b`)
 
 func ExtractLocationStrings(text string) (string, string) {
@@ -144,10 +154,14 @@ func duration(secs route.Seconds) time.Duration {
 }
 
 func (req *Request) Cancel() {
+	if req.IsCancelled {
+		return
+	}
+
 	req.IsCancelled = true
-	if req.CancelRetry != nil {
+	go func() {
 		req.CancelRetry <- true
 		close(req.CancelRetry)
 		req.CancelRetry = nil
-	}
+	}()
 }
